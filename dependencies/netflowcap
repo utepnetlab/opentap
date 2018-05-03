@@ -1,0 +1,46 @@
+#!/bin/bash 
+# # Check number of arguments, if not 2 then print usage message 
+if [ "$#" -ne 4]; then 
+	echo "Usage: netflowcap capture_len_seconds filename(leave off extension) delay" 
+	exit -1 
+fi 
+
+sleep $3
+
+# Capture packets using tcpdump argument 1 is the length of capture in seconds and argument 2 is the output filename 
+
+
+timeout "$1s" /opt/opentap/dependencies/tcpdump -i "$4" -U -w "/opt/opentap/log/$4/$2.pcap" 2> /dev/null &
+tcpdumpPID=$!
+sleep 5s
+
+port=$(( ( RANDOM % 65535 )  + 1 )) #port is very likely to be unique across instances
+#convert
+while ps -p $tcpdumpPID > /dev/null; do  #Update netflow and csv file while still capturing packets 
+
+	#Read netflow packet data
+	while lsof -i:$port; do #make sure another process is not using this port 
+		port=$(( ( RANDOM % 65535 )  + 1 ))
+	done
+
+	/opt/opentap/dependencies/nfcapd -p $port -l /opt/opentap/log/$4 -P nfcappid$port -x "/bin/mv /opt/opentap/log/$4/%f /opt/opentap/log/$4/nfcapd.$port" -D 2> /dev/null > /dev/null
+	sleep 3s #and wait for daemon to start
+
+	#Convert from tcpdump's pcap file to netflow's nfcapd 
+	/opt/opentap/dependencies/softflowd -r "/opt/opentap/log/$4/$2.pcap" -n 127.0.0.1:$port -v 5 2> /dev/null > /dev/null
+
+	# Terminate nfcapd to generate nfcapd. file 
+	pid=$(<nfcappid$port) 
+	kill $pid 
+	sleep 5s 
+
+	# Convert nfcapd to human readable form (csv)
+	/opt/opentap/dependencies/nfdump -r $(find . -name nfcapd.$port | sed 1q) -o csv  > "/opt/opentap/log/$2.csv" 2> /dev/null
+	sleep 1s 
+
+	rm nfcapd.$port
+done
+# Remove the pcap file to conserve space 
+rm "/opt/opentap/log/$4/$2.pcap" 
+
+exit 0

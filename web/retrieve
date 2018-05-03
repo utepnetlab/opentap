@@ -1,0 +1,44 @@
+#!/usr/bin/python
+"""
+Authors: Christian Macias
+
+Description: Python script that implements the "retrieve" OpenTap invocation
+
+"""
+
+import cgi, cgitb, time
+
+
+cgitb.enable()
+
+MAX_ATTEMPTS = 15 #Once second intervals
+
+keysRaw    = cgi.FieldStorage()
+ident      = keysRaw.getvalue('id')
+fileFound  = False
+
+if(ident == None):
+    print('Content-type: text/text');
+    print("")
+    print("please specify an ID")
+    exit()
+
+i=1
+while(not fileFound):
+    try:
+        log=open("/opt/opentap/log/" + ident +".csv")
+        fileFound = True
+    except:
+        i+=1
+        if(i>MAX_ATTEMPTS):
+            print('Content-type: text/csv');
+            print("")
+            print("File not found")
+            exit()
+        time.sleep(1)
+
+print('Content-type: text/csv');
+print('Content-disposition: attachment;filename=' + ident + '.csv');
+print("")
+
+print(log.read())

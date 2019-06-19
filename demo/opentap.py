@@ -17,16 +17,40 @@ import io
 csvpath = './'
 
 # IP addresses for REST API of various OpenTap locations
-VIRGO = { 'name': 'virgo', 'ipaddr': '129.108.40.76', 'portnum': '50080' }
-NETLAB = { 'name': 'netlab', 'ipaddr': '129.108.40.254', 'portnum': '2020' }
+LOCAL = { 'name': 'local', 'ipaddr': '127.0.0.1', 'portnum': '2020' }
 
 #
 # Function: capture
 #
-def capture(datatype,startTime,stopTime,captureID='auto',observationPt='',location=VIRGO):
+def capabilities(location=LOCAL):
+    """
+    Query an OpenTap device for its capabilities
+    Input:  location - location dictionary for OpenTap device (default=LOCAL)
+    Output: Capabilities data structure (a dictionary)
+    """
+    # Setup the REST API URL string
+    #
+    apiString = 'http://' + location['ipaddr'] + ':' + str(location['portnum']) + '/capabilities'
+
+    # Make the REST API Request
+    resp = requests.get(apiString)
+    content_type = resp.headers['Content-Type']
+    
+    if content_type == 'application/json':
+        return json.loads(resp.text)
+    else:
+        print("Unexpected response from OpenTap device:")
+        print(resp.text)
+        return {}
+
+
+#
+# Function: capture
+#
+def capture(datatype,startTime,stopTime,captureID='auto',observationPt='',period=None,location=LOCAL):
     """
     Start an OpenTap data capture
-    Input:  Data type: packet, netflow, temp
+    Input:  Data type: ethernet, netflow, sensor
             Capture Start and Stop Time in UTC UNIX seconds  
             Capture ID (or filename)
             and optionally IP address (ip) and Port number (port) for REST API
@@ -42,8 +66,25 @@ def capture(datatype,startTime,stopTime,captureID='auto',observationPt='',locati
     else:
         apiString = 'http://' + location['ipaddr'] + ':' + str(location['portnum']) + '/capture/' + datatype + '?id=' + str(captureID) + '&start=' + str(startTime) + '&stop=' + str(stopTime) + '&observationPt=' + observationPt
 
+    # append the period argument if it is present
+    if period != None:
+        apiString = apiString + '&period=' + str(period)
+
     # Make the REST API Request
     resp = requests.get(apiString)
+    content_type = resp.headers['Content-Type']
+    
+    if content_type == 'application/json':
+        respData = json.loads(resp.text)
+        if respData['status'] == 'error':
+            print("OpenTap Capture Error: " + respData['msg'])
+        elif respData['status'] == 'success':
+            print("OpenTap Capture Success: " + respData['msg'])
+            captureID = respData['id']
+    else:
+        print("Unexpected response from OpenTap device:")
+        print(resp.text)
+        captureID = ''
 
     # Retrieve and return the measurement task ID
     return captureID
@@ -51,7 +92,7 @@ def capture(datatype,startTime,stopTime,captureID='auto',observationPt='',locati
 #
 # Function: retrieve
 #
-def retrieve(capturetype,captureID,location=VIRGO,port=50080):
+def retrieve(capturetype,captureID,location=LOCAL):
     """
     Retrieve data from an OpenTap device
     Input:  Capture type: packet, netflow, temp
@@ -68,10 +109,14 @@ def retrieve(capturetype,captureID,location=VIRGO,port=50080):
     status_code = resp.status_code
     content_type = resp.headers['Content-Type']
     
+    #print('Content type = ' + content_type)
+    #print("RESP: " + resp.text)
+    
     if status_code == 200:
         # Received a positive response
-        if resp.text.count('\n') < 5:
+        if resp.text.count('\n') < 2:
             print("RESP: " + resp.text)
+            # Return a NULL PANDAS data frame
             return pd.DataFrame()
         if content_type == 'text/csv':
             csvFile = io.StringIO(resp.text)
@@ -81,21 +126,31 @@ def retrieve(capturetype,captureID,location=VIRGO,port=50080):
                     # Netflow data is in NFDUMP format, convert it
                     netflowData = nfdumpToNetflow(netflowData)
                 return netflowData
-            elif capturetype == 'temperature':
-                tempData = pd.read_csv(csvFile)
-                return tempData
+            elif capturetype == 'sensor':
+                sensorData = pd.read_csv(csvFile)
+                sensorData['time'] = pd.to_datetime(sensorData['time'], unit='ms', utc=True)
+                return sensorData
             elif capturetype == 'ethernet':
                 ethernetData = pd.read_csv(csvFile)
+                ethernetData['time'] = pd.to_datetime(ethernetData['time'], unit='ms', utc=True)
                 return ethernetData
             else:
                 print("Unsupported data type: " + capturetype)
                 return pd.DataFrame()
-        else:
-            # Server did not return a CSV file
+        elif content_type == 'application/json':
+            # Server did not return a CSV file, it is sending a message in JSON
+            respData = json.loads(resp.text)
+            print('OpenTap Retrieve ' + respData['status'] + ': ' + respData['msg'])
             # Return a NULL PANDAS data frame
             return pd.DataFrame()
-    else:    
-        # Error from server, return response string
+        else:
+            print("Unexpected response from OpenTap device:")
+            print(resp.text)
+            # Return a NULL PANDAS data frame
+            return pd.DataFrame()
+    else:
+        print("Errored HTTP response from OpenTap device: " + str(status_code))
+        # Error from server, return a NULL PANDAS data frame
         return pd.DataFrame()
 
 #

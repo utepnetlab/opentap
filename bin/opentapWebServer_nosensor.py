@@ -16,7 +16,6 @@ import json
 import time
 import random
 import ethernet
-import sensor
 
 # Hardcoded path for storing data collected by OpenTap
 csvpath = '/opt/opentap/log/'
@@ -255,91 +254,6 @@ def captureNetflow():
         	#
         	# Data capture code stop
         	#
-		else:
-			#
-			# Return a success response to the client (JSON)
-			#
-			if(changedStart == 1):
-				procStarted={"status": "success", "msg": "Changed startTime to now because it was in the past.", \
-							"id" : captureID, "startTime": int(startTime), "stopTime": stopTime, \
-							"duration" : (int(stopTime) - int(startTime))
-							}
-			else:
-				procStarted={"status": "success", "msg": "", \
-							"id" : captureID, "startTime": startTime, "stopTime": stopTime, \
-							"duration" : (int(stopTime) - int(startTime))}
-			return json.dumps(procStarted), 200, {'Content-Type': 'application/json'}
-
-
-#
-# Capture Sensor API
-#
-@app.route("/capture/sensor")
-def captureSensor():
-	# obtain arguments
-	captureID     = request.args.get('id')
-	startTime     = request.args.get('start')
-	stopTime      = request.args.get('stop')
-	observationPt = request.args.get('observationPt')
-	period        = request.args.get('period')
-	changedStart = 0
-
-	# if no sampling period was specified, use the default of 1000 msec (i.e., 1 sec)
-	if(period == None):
-		period = 1000
-
-	# validate start and stop times
-	changedStart = 0
-	if ((startTime != None) & (stopTime != None)):
-		if(int(startTime) < int(time.time())):
-			startTime=time.time()
-			changedStart = 1	
-		if(int(startTime) > int(stopTime)):
-			# Return an error response to the client
-			if changedStart == 0:
-				return json.dumps({"status": "error", "msg": "Start time is later than stop time."}), 200, {'Content-Type': 'application/json'}
-			else:
-				return json.dumps({"status": "error", "msg": "Stop time is earlier than current time."}), 200, {'Content-Type': 'application/json'}
-
-		# if no id specified by the user, select a random number
-		if(captureID == None):   
-			captureID=random.randint(1, 100000000)
-
-		# check that user specified id does not conflict with any existing data objects
-		os.chdir(csvpath)
-		while(os.path.isfile(str(captureID)+".csv")):
-			# if so, use a random number
-			captureID=random.randint(1, 100000000)
-
-		print("Launching sensor data collection task")
-		pid=os.fork()
-		if(pid == 0):
-
-		    #insure the sensor label exists
-			phSensor = sensor.phidgetSensor()
-			if(not phSensor.initSensor(observationPt)):
-				return json.dumps({"status": "error", "msg": "could not find sensor " + str(observationPt)}), 200, {'Content-Type': 'application/json'}
-
-			#
-			# Data capture code start
-			#
-			os.close(1) #close stdout and stderr
-			os.close(2) 
-			#do work
-			if((int(startTime) - int(time.time())) > 0):
-				time.sleep(int(startTime) - int(time.time()))
-			if(period==None): #default to one second
-				period = 1000;
-                
-			duration = (int(stopTime) - int(startTime))
-
-			phSensor.start(pollDuration = duration, passSampleRate = int(period), fileID = str(captureID))
-
-			time.sleep(5)
-			exit()
-		#
-		# Data capture code stop
-		#
 		else:
 			#
 			# Return a success response to the client (JSON)

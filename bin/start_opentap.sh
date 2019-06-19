@@ -3,7 +3,7 @@
 # Description: This script launches OpenTap (the Web Server and the Garbage collector)
 #
 
-if [[ $EUID -ne 0 ]]; then
+if ! [ $(id -u) = 0 ]; then
    echo "This script must be run as root" 1>&2
    exit 1
 fi
@@ -31,5 +31,5 @@ fi
 printf "Starting the OpenTap Web Server (check log directory for output)\n"
 #Start web server
 serverAddress=$(cat /etc/opentap/opentap.conf | grep "websrv-addr:")
-serverAddress=${serverAddress//"websrv-addr: "}
-python opentapWebServer.py $serverAddress &> /opt/opentap/log/webserver.log &
+serverAddress=${serverAddress##"websrv-addr: "}
+python3 opentapWebServer.py $serverAddress &> /opt/opentap/log/webserver.log &

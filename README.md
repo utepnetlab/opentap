@@ -20,10 +20,10 @@ OpenTap consists of two perpetually executing programs (a python script Web serv
 that purges old data).
 
 Starting OpenTap:
-**_sudo /opt/opentap/bin/start_opentap.sh_**
+**_sudo bash /opt/opentap/bin/start_opentap.sh_**
 
 Shutting down OpenTap:
-**_sudo /opt/opentap/bin/stop_opentap.sh_**
+**_sudo bash /opt/opentap/bin/stop_opentap.sh_**
 
 # How do I use OpenTap?
 
@@ -42,17 +42,21 @@ start – start time of capture
 stop – stop time of capture
 observationpt – observation point identifier (0 for default)
 return: id (used for retrieval)
-REST: /capture/type?start=xx&stop=xx&observationpt=xx
+
+_REST_: /capture/type?start=xx&stop=xx&observationpt=xx
 
 **retrieve**
 arguments: id
 id – retrieval id (returned from capture invocation)
-return: captured data REST: /retrieve?id=xx
+return: captured data
+
+_REST_: /retrieve?id=xx
 
 **capabilities**
 arguments: none
 return: supported data type list, observation point identifier list, capture length limit, retention period limit
-REST: / or /capabilities
+
+_REST_: / or /capabilities
 
 Data types currently supported: Network data types: netflow, ethernet Sensor data types: Phidgets temperature, Phidgets motion, Phidgets vibration
 

@@ -8,7 +8,8 @@ The OpenTap interface is a remote invocation service that can be implemented on 
 OpenTap depends on Python3, please install Python3 first and be sure "python3" is in your path. If the Python3 installation does not create an executable called "python3", create a soft link called "python3" that links to the executable name using "ln -s". Be sure to also install pip3; creating a soft link called "pip3" if necessary.
 
 Once Python3 is properly installed, execute the installation script:
-sudo bash install.sh
+
+**_sudo bash install.sh_**
 
 You must use bash to execute the install script. Some Linux distributions use dash; dash will not properly execute the script.
 
@@ -19,15 +20,15 @@ OpenTap consists of two perpetually executing programs (a python script Web serv
 that purges old data).
 
 Starting OpenTap:
-sudo /opt/opentap/bin/start_opentap.sh
+**_sudo /opt/opentap/bin/start_opentap.sh_**
 
 Shutting down OpenTap:
-sudo /opt/opentap/bin/stop_opentap.sh
+**_sudo /opt/opentap/bin/stop_opentap.sh_**
 
 # How do I use OpenTap?
 
 The quickest way to use OpenTap is with the OpenTap Python module found in demo/opentap.py along with the demo script demo/opentapdemo.py. The opentap.py module contains functions to initiate data capture tasks and retrieve the data into PANDAS data frames. At the top of this file (opentap.py) you will want to create a Python dictionary for each of your OpenTap devices. The dictionary will need a name and contain three fields (name – the name of the device, ipaddr – the IP address of the OpenTap device REST API, and portnum – the port number of the OpenTap device REST API). Here is an example for our OpenTap device that is monitoring our Virgo cluster:
-VIRGO = { 'name': 'virgo', 'ipaddr': '129.108.40.76', 'portnum': '50080' }
+**_VIRGO = { 'name': 'virgo', 'ipaddr': '129.108.40.76', 'portnum': '50080' }_**
 
 The demo script (opentapdemo.py) shows an example of how to capture NetFlow data and retrieve this data into a PANDAS data frame.
 

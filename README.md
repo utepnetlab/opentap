@@ -1,11 +1,11 @@
 # What is OpenTap?
 
-OpenTap is a software defined networking interface to network tap devices. Network tap devices are devices that can capture data plane traffic in a network. This data can be collected in various formats such as pcap (packet capture) or NetFlow (flow records in CSV). OpenTap configuration is set by an administrator through the opentap.conf file.
+OpenTap is a software defined networking interface to network tap devices. Network tap devices are devices that can capture data plane traffic in a network. This data can be collected in various formats such as pcap (packet capture) or NetFlow (flow records in CSV). OpenTap has been generalized to also capture sensor data from Phidgets USB sensors. OpenTap configuration is set by an administrator through the opentap.conf file.
 The OpenTap interface is a remote invocation service that can be implemented on top of other protocols such as SSH or HTTP (via REST API). 
 
 # How do I install OpenTap?
 
-OpenTap depends on Python3, please install Python3 first and be sure "python3" is in your path. If the Python3 installation does not create an executable called "python3", creating a soft link called "python3" that links to the executable name using "ln -s". Be sure to also install pip3; creating a soft link called "pip3" if necessary.
+OpenTap depends on Python3, please install Python3 first and be sure "python3" is in your path. If the Python3 installation does not create an executable called "python3", create a soft link called "python3" that links to the executable name using "ln -s". Be sure to also install pip3; creating a soft link called "pip3" if necessary.
 
 Once Python3 is properly installed, execute the installation script:
 sudo bash install.sh
